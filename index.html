@@ -13,39 +13,75 @@
     </nav>
 
     <div class="max-w-6xl mx-auto p-8">
-        <h2 class="text-3xl font-bold mb-8">📺 My Videos</h2>
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-3xl font-bold">📺 My Videos</h2>
+            <button onclick="refreshVideos()" class="bg-blue-600 px-6 py-2 rounded-full hover:bg-blue-700">🔄 Refresh</button>
+        </div>
+        
+        <div id="debug" class="bg-gray-800 p-4 rounded mb-6 hidden"></div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="videoGrid">
-            <!-- Your uploaded videos auto-load here -->
+            <!-- Videos load here -->
+        </div>
+        <div id="noVideos" class="text-center py-20 text-gray-500">
+            <div class="text-6xl mb-4">🎥</div>
+            <h3 class="text-2xl mb-2">No videos yet</h3>
+            <a href="upload.html" class="bg-red-600 px-8 py-3 rounded-full font-bold">Upload First Video</a>
         </div>
     </div>
 
     <script>
-        // Load uploaded videos from localStorage
-        const videos = JSON.parse(localStorage.getItem('sumittube-videos') || '[]');
-        const grid = document.getElementById('videoGrid');
+        function loadVideos() {
+            const videos = JSON.parse(localStorage.getItem('sumittube-videos') || '[]');
+            const grid = document.getElementById('videoGrid');
+            const noVideos = document.getElementById('noVideos');
+            const debug = document.getElementById('debug');
+            
+            debug.classList.add('hidden');
+            
+            if (videos.length === 0) {
+                grid.innerHTML = '';
+                noVideos.classList.remove('hidden');
+                return;
+            }
+            
+            noVideos.classList.add('hidden');
+            grid.innerHTML = '';
+            
+            videos.forEach((video, index) => {
+                grid.innerHTML += `
+                    <div class="bg-gray-800 rounded-xl p-6 hover:bg-gray-700 cursor-pointer group" onclick="playVideo('${video.url}')">
+                        <video src="${video.url}" class="w-full rounded-lg mb-4 aspect-video object-cover group-hover:scale-105 transition-transform" muted preload="metadata"></video>
+                        <h3 class="font-bold text-xl mb-2 truncate">${video.name}</h3>
+                        <p class="text-gray-400 text-sm">${video.size} • ${video.time}</p>
+                    </div>
+                `;
+            });
+        }
         
-        videos.forEach(video => {
-            grid.innerHTML += `
-                <div class="bg-gray-800 rounded-xl p-6 hover:bg-gray-700 cursor-pointer" onclick="playVideo('${video.url}')">
-                    <video src="${video.url}" class="w-full rounded-lg mb-4 aspect-video object-cover" muted></video>
-                    <h3 class="font-bold text-xl mb-2">${video.name}</h3>
-                    <p class="text-gray-400">${video.size} • ${video.time}</p>
-                </div>
-            `;
-        });
+        function refreshVideos() {
+            localStorage.removeItem('sumittube-videos');
+            loadVideos();
+        }
         
         function playVideo(url) {
             const modal = document.createElement('div');
+            modal.id = 'videoModal';
             modal.innerHTML = `
-                <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;">
-                    <div style="position:relative;">
-                        <video src="${url}" controls style="width:90vw;max-width:800px;height:50vh;" autoplay></video>
-                        <button onclick="this.parentElement.parentElement.remove()" style="position:absolute;top:20px;right:20px;background:red;color:white;border:none;padding:10px 15px;border-radius:50%;cursor:pointer;font-size:20px;">×</button>
+                <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;">
+                    <div style="position:relative;max-width:90vw;max-height:90vh;">
+                        <video src="${url}" controls style="width:100%;height:auto;max-height:80vh;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.5);" autoplay></video>
+                        <button onclick="document.getElementById('videoModal').remove()" style="position:absolute;top:-15px;right:-15px;background:#dc2626;color:white;border:none;width:50px;height:50px;border-radius:50%;font-size:20px;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3);">×</button>
                     </div>
                 </div>
             `;
             document.body.appendChild(modal);
         }
+        
+        // Load on page start
+        loadVideos();
+        
+        // Debug info
+        console.log('Videos found:', JSON.parse(localStorage.getItem('sumittube-videos') || '[]'));
     </script>
 </body>
 </html>
