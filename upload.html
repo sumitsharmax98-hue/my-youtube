@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-black text-white p-6 font-sans">
+
     <div class="max-w-2xl mx-auto">
         <nav class="flex justify-between mb-10">
             <h1 class="text-2xl font-bold text-red-500">SumitTube</h1>
@@ -14,85 +15,124 @@
         </nav>
 
         <div class="border-2 border-dashed border-gray-700 rounded-3xl p-10 text-center bg-gray-900/50">
+
+            <!-- Upload UI -->
             <div id="uploadContent">
-                <h2 class="text-2xl font-bold mb-4">Manual Sync Upload</h2>
+                <h2 class="text-2xl font-bold mb-4">Upload Video</h2>
+
                 <input type="file" id="fileInput" accept="video/*" class="hidden">
+
                 <button onclick="document.getElementById('fileInput').click()" 
-                    class="bg-red-600 px-10 py-4 rounded-xl font-bold uppercase tracking-wider shadow-lg">
+                    class="bg-red-600 px-10 py-4 rounded-xl font-bold shadow-lg">
                     Select Video
                 </button>
             </div>
 
+            <!-- Loading UI -->
             <div id="statusUI" class="hidden">
                 <div class="animate-spin h-10 w-10 border-4 border-red-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p id="msg" class="text-xl font-bold text-red-400">Uploading to Cloudinary...</p>
+                <p id="msg" class="text-xl font-bold text-red-400">Uploading...</p>
             </div>
+
         </div>
     </div>
 
-    <script>
-        // --- ⚠️ CONFIGURATION (MANUALLY EDIT THIS) ---
-        const CLOUD_NAME = "dkyka4sut";
-        const UPLOAD_PRESET = "free-upload"; 
-        const GITHUB_TOKEN = "ghp_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"; // <-- YAHAN DALO
-        const REPO_OWNER = "sumitsharmax98-hue";
-        const REPO_NAME = "my-youtube";
+<script>
+/* ================= CONFIG ================= */
+const CLOUD_NAME = "dkyka4sut";
+const UPLOAD_PRESET = "free-upload";
 
-        const fileInput = document.getElementById('fileInput');
+/* ⚠️ अपना नया token डालो (पुराना revoke कर देना) */
+const GITHUB_TOKEN = "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";
 
-        fileInput.onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+const REPO_OWNER = "sumitsharmax98-hue";
+const REPO_NAME = "my-youtube";
 
-            document.getElementById('uploadContent').classList.add('hidden');
-            document.getElementById('statusUI').classList.remove('hidden');
+/* ================= MAIN ================= */
+const fileInput = document.getElementById('fileInput');
 
-            try {
-                // 1. Cloudinary Upload
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', UPLOAD_PRESET);
+fileInput.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-                const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`, {
-                    method: 'POST', body: formData
-                });
-                const data = await res.json();
-                if (!data.secure_url) throw new Error("Cloudinary Failed");
+    document.getElementById('uploadContent').classList.add('hidden');
+    document.getElementById('statusUI').classList.remove('hidden');
 
-                // 2. GitHub Sync
-                document.getElementById('msg').innerText = "Updating GitHub data.json...";
-                
-                const ghGet = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json`, {
-                    headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
-                });
-                const ghData = await ghGet.json();
-                const content = JSON.parse(atob(ghData.content));
+    try {
+        /* ---------- STEP 1: Cloudinary ---------- */
+        document.getElementById('msg').innerText = "Uploading to Cloudinary...";
 
-                content.videos.unshift({
-                    url: data.secure_url,
-                    name: file.name,
-                    size: (file.size / 1024 / 1024).toFixed(1) + "MB",
-                    time: new Date().toLocaleString()
-                });
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', UPLOAD_PRESET);
 
-                await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json`, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        message: "Added: " + file.name,
-                        content: btoa(JSON.stringify(content, null, 2)),
-                        sha: ghData.sha
-                    })
-                });
+        const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`, {
+            method: 'POST',
+            body: formData
+        });
 
-                document.getElementById('msg').innerText = "DONE! ✅";
-                setTimeout(() => window.location.href = 'index.html', 2000);
+        const cloudData = await cloudRes.json();
 
-            } catch (err) {
-                alert("Error: " + err.message);
-                location.reload();
+        if (!cloudData.secure_url) {
+            throw new Error("Cloudinary upload failed!");
+        }
+
+        /* ---------- STEP 2: GitHub ---------- */
+        document.getElementById('msg').innerText = "Updating GitHub...";
+
+        const ghGet = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json?t=${Date.now()}`, {
+            headers: {
+                "Authorization": `token ${GITHUB_TOKEN}`
             }
+        });
+
+        if (!ghGet.ok) throw new Error("GitHub fetch failed!");
+
+        const ghData = await ghGet.json();
+
+        // ✅ SAFE decode (Unicode fix)
+        const decodedContent = decodeURIComponent(escape(atob(ghData.content)));
+        const jsonData = JSON.parse(decodedContent);
+
+        if (!jsonData.videos) jsonData.videos = [];
+
+        // New video object
+        const newVideo = {
+            url: cloudData.secure_url,
+            name: file.name,
+            size: (file.size / 1048576).toFixed(1) + " MB",
+            time: new Date().toLocaleString('hi-IN')
         };
-    </script>
+
+        jsonData.videos.unshift(newVideo);
+
+        /* ---------- STEP 3: Push to GitHub ---------- */
+        await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json`, {
+            method: 'PUT',
+            headers: {
+                "Authorization": `token ${GITHUB_TOKEN}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                message: "Upload: " + file.name,
+                // ✅ Unicode SAFE encode
+                content: btoa(unescape(encodeURIComponent(JSON.stringify(jsonData, null, 2)))),
+                sha: ghData.sha
+            })
+        });
+
+        document.getElementById('msg').innerText = "Upload Complete ✅";
+
+        setTimeout(() => {
+            window.location.href = "index.html";
+        }, 2000);
+
+    } catch (err) {
+        alert("Error: " + err.message);
+        location.reload();
+    }
+};
+</script>
+
 </body>
 </html>
