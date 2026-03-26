@@ -4,34 +4,125 @@
     <title>Upload - SumitTube</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .loading-shimmer {
-            background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-        }
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
+        video { max-height: 400px; }
+        .upload-card { transition: all 0.3s; }
+        .upload-card:hover { transform: translateY(-5px); }
     </style>
 </head>
-<body class="bg-gradient-to-br from-gray-900 to-black text-white min-h-screen p-6 md:p-12">
-    <div class="max-w-3xl mx-auto">
-        <nav class="flex justify-between items-center mb-10">
-            <a href="index.html" class="text-3xl font-black bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent transition-transform hover:scale-105">
+<body class="bg-gradient-to-br from-gray-900 to-black text-white min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <nav class="flex justify-between items-center mb-12">
+            <a href="index.html" class="text-4xl font-black bg-gradient-to-r from-red-500 via-pink-500 to-purple-500 bg-clip-text text-transparent hover:scale-105 transition-all">
                 📱 SumitTube
             </a>
-            <a href="index.html" class="text-gray-400 hover:text-white flex items-center gap-2 font-medium">
-                ← Wapas Home Jao
-            </a>
+            <div class="text-sm text-gray-500">Video is now permanent!</div>
         </nav>
 
-        <div id="uploadBox" class="bg-gray-800/20 backdrop-blur-xl border-4 border-dashed border-gray-700 rounded-[2rem] p-10 md:p-20 text-center transition-all hover:border-red-500/50 hover:bg-gray-800/30">
+        <div class="text-center mb-16">
+            <h1 class="text-6xl font-black mb-6 bg-gradient-to-r from-rose-400 via-fuchsia-500 to-indigo-500 bg-clip-text text-transparent">
+                🚀 Upload Video
+            </h1>
+            <p class="text-xl text-gray-400 mb-8">Instant home sync - Refresh Proof!</p>
+        </div>
+
+        <div id="dropZone" class="upload-card border-4 border-dashed border-gray-600 rounded-3xl p-20 mb-12 text-center hover:border-rose-400 hover:shadow-2xl cursor-pointer bg-gray-800/30 backdrop-blur-sm relative">
+            
             <div id="uploadContent">
-                <div class="text-7xl mb-6">📤</div>
-                <h1 class="text-4xl font-bold mb-4">Video Upload Karein</h1>
-                <p class="text-gray-400 mb-8 text-lg">Select karein aur home par sync karein!</p>
-                
+                <div class="text-8xl mb-8">🎥</div>
+                <h2 class="text-4xl font-bold mb-4">Select Video File</h2>
                 <input type="file" id="fileInput" accept="video/*" class="hidden">
                 <button onclick="document.getElementById('fileInput').click()" 
-                    class="bg-red-600 hover:bg-red-700 text-white px-10 py-5 rounded-2xl text-xl font-bold shadow-2xl shadow
+                    class="bg-gradient-to-r from-rose-500 to-fuchsia-600 hover:from-rose-600 hover:to-fuchsia-700 text-white px-16 py-6 rounded-3xl text-2xl font-bold shadow-2xl mb-8 transform hover:-translate-y-2 transition-all duration-300">
+                    📤 Select Video
+                </button>
+                <p class="text-lg text-gray-500">Small MP4 (< 5MB) • Auto-sync to home</p>
+            </div>
+
+            <div id="processingUI" class="hidden absolute inset-0 bg-black/90 flex flex-col items-center justify-center rounded-3xl p-10">
+                <div class="w-20 h-20 border-4 border-rose-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+                <h2 class="text-3xl font-bold text-rose-500 mb-4">Processing Video...</h2>
+                <p class="text-xl text-gray-400">Memory link ko permanent bana rahe hai!</p>
+            </div>
+        </div>
+
+        <div id="status" class="text-center font-bold text-2xl mb-8 hidden"></div>
+        <div id="preview" class="space-y-6"></div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const uploadContent = document.getElementById('uploadContent');
+        const processingUI = document.getElementById('processingUI');
+        const dropZone = document.getElementById('dropZone');
+
+        fileInput.onchange = function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // UI badlo (Loading dikhao)
+            uploadContent.classList.add('opacity-0'); // Content hide karein
+            processingUI.classList.remove('hidden'); // Loader dikhayein
+            dropZone.classList.remove('border-dashed');
+            dropZone.classList.add('border-solid', 'border-rose-600/30');
+
+            const reader = new FileReader();
+
+            // FILE READING START - Base64 Conversion
+            reader.onload = function(event) {
+                const base64Url = event.target.result; // Yeh permanent data hai!
+                
+                let videos = JSON.parse(localStorage.getItem('sumittube-videos') || '[]');
+                
+                const newVideo = {
+                    url: base64Url, // Ab yahan Blob nahi, Base64 save ho raha hai
+                    name: file.name,
+                    size: (file.size / 1000000).toFixed(1) + 'MB',
+                    time: new Date().toLocaleString('hi-IN', {hour12: false})
+                };
+
+                videos.unshift(newVideo);
+                
+                try {
+                    localStorage.setItem('sumittube-videos', JSON.stringify(videos));
+                    
+                    // Success UI
+                    processingUI.innerHTML = `
+                        <div class="text-8xl mb-8">✅</div>
+                        <h2 class="text-3xl font-bold text-green-500 mb-4">Video Live Ho Gayi!</h2>
+                        <p class="text-xl text-gray-400">Home page par redirect ho rahe hai...</p>
+                    `;
+                    
+                    // 1.5 second baad home page par redirection
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+
+                } catch (err) {
+                    // Agar storage full ho jaye
+                    processingUI.classList.add('hidden');
+                    uploadContent.classList.remove('opacity-0');
+                    alert("❌ Error: Memory Full! Purani videos delete karein tabhi naya upload hoga.");
+                    location.reload();
+                }
+            };
+
+            reader.onerror = function() {
+                processingUI.classList.add('hidden');
+                uploadContent.classList.remove('opacity-0');
+                alert("❌ File read karne mein dikkat aayi.");
+                location.reload();
+            };
+
+            // Video ko Base64 string mein convert karna shuru karein
+            reader.readAsDataURL(file); // Convert file to Base64
+        };
+
+        function showStatus(msg, type) {
+            const status = document.getElementById('status');
+            status.textContent = msg;
+            status.className = `text-center font-bold text-2xl mb-8 ${type === 'success' ? 'text-green-400' : 'text-red-400'}`;
+            status.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
