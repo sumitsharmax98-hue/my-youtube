@@ -1,107 +1,80 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-    <meta charset="UTF-8">
     <title>Upload - SumitTube</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .upload-zone {
-            transition: all 0.3s ease;
-        }
-        .upload-zone:hover {
-            border-color: #ef4444;
-            background: rgba(239,68,68,0.05);
-        }
-    </style>
 </head>
-<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white min-h-screen">
-    <nav class="p-6 sticky top-0 backdrop-blur-md bg-black/30 z-50">
-        <div class="max-w-4xl mx-auto flex justify-between">
-            <a href="index.html" class="text-3xl font-black bg-gradient-to-r from-red-400 via-pink-500 to-purple-500 bg-clip-text text-transparent">
-                📱 SumitTube
-            </a>
-            <span class="text-sm text-gray-400">Powered by Cloudinary</span>
-        </div>
-    </nav>
-
-    <div class="max-w-2xl mx-auto px-6 py-12">
-        <h1 class="text-5xl font-black text-center mb-16 bg-gradient-to-r from-rose-400 via-fuchsia-500 to-indigo-500 bg-clip-text text-transparent">
-            🚀 Direct Upload
-        </h1>
-
-        <!-- Upload Zone -->
-        <div id="uploadZone" class="upload-zone border-4 border-dashed border-gray-500 rounded-3xl p-20 text-center mb-12 cursor-pointer">
-            <div class="text-7xl mb-8">🎥</div>
-            <h2 class="text-4xl font-black mb-4">Video Select Karo</h2>
-            <p class="text-xl text-gray-400 mb-8">FREE • Unlimited • Instant</p>
-            <button onclick="startUpload()" class="bg-gradient-to-r from-rose-500 to-fuchsia-600 hover:from-rose-600 hover:to-fuchsia-700 text-white px-12 py-6 rounded-2xl text-2xl font-bold shadow-2xl hover:shadow-3xl transform hover:-translate-y-2 transition-all duration-300">
-                📤 Choose Video
+<body class="bg-gray-900 text-white p-8 min-h-screen">
+    <div class="max-w-2xl mx-auto">
+        <a href="index.html" class="text-2xl mb-8 block hover:text-red-400">← Home</a>
+        <h1 class="text-4xl font-bold mb-12 text-center">📤 Video Upload</h1>
+        
+        <!-- Fixed Upload Button -->
+        <div class="border-4 border-dashed border-gray-500 rounded-3xl p-16 text-center hover:border-red-400 cursor-pointer transition-all mb-12">
+            <div class="text-6xl mb-6">🎥</div>
+            <h2 class="text-3xl font-bold mb-4">Click to Upload</h2>
+            <button id="uploadButton" class="bg-red-600 hover:bg-red-700 px-12 py-4 rounded-2xl text-xl font-bold">
+                📱 Select Video
             </button>
+            <p class="text-gray-400 mt-4 text-lg">MP4 • FREE • 50MB max</p>
         </div>
-
-        <!-- Videos Gallery -->
-        <div id="gallery" class="space-y-8"></div>
+        
+        <!-- Status -->
+        <div id="status" class="text-center font-bold text-xl mb-8 hidden"></div>
+        
+        <!-- Videos -->
+        <div id="videos" class="space-y-6"></div>
     </div>
 
-    <!-- Cloudinary Widget -->
-    <script src="https://upload-widget.cloudinary.com/latest/global/all.js" type="text/javascript"></script>
+    <script src="https://upload-widget.cloudinary.com/latest/global/all.js"></script>
     <script>
-        // ✅ dkyka4sut ALREADY ADDED!
-        const YOUR_CLOUD_NAME = 'dkyka4sut';
+        // ✅ dkyka4sut + free-upload preset READY!
+        const CLOUD_NAME = 'dkyka4sut';
         
-        let myVideos = JSON.parse(localStorage.getItem('sumittube-videos')) || [];
-
-        function startUpload() {
+        document.getElementById('uploadButton').addEventListener('click', function() {
+            document.getElementById('status').textContent = '🔄 Opening upload...';
+            document.getElementById('status').classList.remove('hidden');
+            
             cloudinary.openUploadWidget({
-                cloudName: 'dkyka4sut',
+                cloudName: CLOUD_NAME,
                 uploadPreset: 'free-upload',
-                sources: ['local', 'camera'],
-                multiple: true,
-                maxFiles: 5,
+                sources: ['local'],
+                multiple: false,
+                maxFiles: 1,
                 fileType: 'video',
-                maxFileSize: 50000000, // 50MB
-                clientAllowedFormats: ['mp4', 'mov', 'avi']
+                maxFileSize: 50000000  // 50MB
             }, (error, result) => {
                 if (!error && result.event === 'success') {
-                    const videoData = {
-                        id: result.info.public_id,
-                        url: result.info.secure_url,
-                        name: result.info.original_filename,
-                        size: (result.info.bytes / 1000000).toFixed(1) + 'MB',
-                        time: new Date().toLocaleString('hi-IN')
-                    };
-                    myVideos.unshift(videoData);
-                    localStorage.setItem('sumittube-videos', JSON.stringify(myVideos));
-                    showGallery();
+                    document.getElementById('status').innerHTML = '✅ <span class="text-green-400">Upload Complete!</span>';
+                    showVideo(result.info.secure_url, result.info.original_filename);
+                } else if (error) {
+                    document.getElementById('status').innerHTML = '❌ <span class="text-red-400">' + error.message + '</span>';
                 }
             });
-        }
-
-        function showGallery() {
-            const gallery = document.getElementById('gallery');
-            gallery.innerHTML = myVideos.map(video => `
-                <div class="bg-gray-800/50 backdrop-blur-sm rounded-3xl p-8 border border-gray-700 hover:border-rose-500 transition-all duration-300 hover:scale-[1.02]">
-                    <video src="${video.url}" controls preload="metadata" class="w-full rounded-2xl aspect-video object-cover mb-6 shadow-2xl" poster="https://via.placeholder.com/640x360/333/fff?text=SumitTube"></video>
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        });
+        
+        function showVideo(url, name) {
+            document.getElementById('videos').innerHTML = `
+                <div class="bg-gray-800 p-8 rounded-2xl border-2 border-green-500">
+                    <video src="${url}" controls class="w-full rounded-xl mb-6 aspect-video object-cover" autoplay muted></video>
+                    <div class="flex flex-wrap gap-4 justify-between items-center">
                         <div>
-                            <h3 class="text-2xl font-bold mb-2 truncate max-w-xs">${video.name}</h3>
-                            <p class="text-gray-400">${video.size} • ${video.time}</p>
+                            <h3 class="text-2xl font-bold mb-1">${name}</h3>
+                            <p class="text-green-400 font-semibold mb-2">✅ Live on SumitTube!</p>
+                            <a href="${url}" class="text-blue-400 hover:text-blue-300" target="_blank">🔗 Direct Link</a>
                         </div>
-                        <div class="flex gap-3 pt-2">
-                            <a href="${video.url}" download class="bg-green-600 hover:bg-green-700 p-4 rounded-2xl transition-all" title="Download">
-                                ⬇️
+                        <div class="flex gap-2">
+                            <a href="${url}" download class="bg-green-600 hover:bg-green-700 p-3 rounded-xl">
+                                ⬇️ Download
                             </a>
-                            <a href="${video.url}" target="_blank" class="bg-blue-600 hover:bg-blue-700 p-4 rounded-2xl transition-all" title="Share">
-                                📱
+                            <a href="${url}" target="_blank" class="bg-blue-600 hover:bg-blue-700 p-3 rounded-xl">
+                                📱 Share
                             </a>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
         }
-
-        // Load videos on page load
-        showGallery();
     </script>
 </body>
 </html>
