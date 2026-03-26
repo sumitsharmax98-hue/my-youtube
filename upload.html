@@ -4,113 +4,34 @@
     <title>Upload - SumitTube</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        video { max-height: 400px; }
-        .upload-card { transition: all 0.3s; }
-        .upload-card:hover { transform: translateY(-5px); }
+        .loading-shimmer {
+            background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
     </style>
 </head>
-<body class="bg-gradient-to-br from-gray-900 to-black text-white min-h-screen p-8">
-    <div class="max-w-4xl mx-auto">
-        <nav class="flex justify-between items-center mb-12">
-            <a href="index.html" class="text-4xl font-black bg-gradient-to-r from-red-500 via-pink-500 to-purple-500 bg-clip-text text-transparent hover:scale-105 transition-all">
+<body class="bg-gradient-to-br from-gray-900 to-black text-white min-h-screen p-6 md:p-12">
+    <div class="max-w-3xl mx-auto">
+        <nav class="flex justify-between items-center mb-10">
+            <a href="index.html" class="text-3xl font-black bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent transition-transform hover:scale-105">
                 📱 SumitTube
             </a>
-            <div class="text-sm text-gray-500">Videos are now permanent!</div>
+            <a href="index.html" class="text-gray-400 hover:text-white flex items-center gap-2 font-medium">
+                ← Wapas Home Jao
+            </a>
         </nav>
 
-        <div class="text-center mb-16">
-            <h1 class="text-6xl font-black mb-6 bg-gradient-to-r from-rose-400 via-fuchsia-500 to-indigo-500 bg-clip-text text-transparent">
-                🚀 Upload Video
-            </h1>
-            <p class="text-xl text-gray-400 mb-8">Base64 Sync - Refresh Proof!</p>
-        </div>
-
-        <div id="dropZone" class="upload-card border-4 border-dashed border-gray-600 rounded-3xl p-20 mb-12 text-center hover:border-rose-400 hover:shadow-2xl cursor-pointer bg-gray-800/30 backdrop-blur-sm">
-            <div class="text-8xl mb-8">🎥</div>
-            <h2 class="text-4xl font-bold mb-4">Drop Video Here</h2>
-            <input type="file" id="fileInput" accept="video/*" class="hidden">
-            <button onclick="document.getElementById('fileInput').click()" class="bg-gradient-to-r from-rose-500 to-fuchsia-600 hover:from-rose-600 hover:to-fuchsia-700 text-white px-16 py-6 rounded-3xl text-2xl font-bold shadow-2xl mb-8 transform hover:-translate-y-2 transition-all duration-300">
-                📤 Select Video
-            </button>
-            <p class="text-lg text-gray-500">Small MP4 (< 5MB) • Auto-sync</p>
-        </div>
-
-        <div id="status" class="text-center font-bold text-2xl mb-8 hidden"></div>
-        <div id="preview" class="space-y-6"></div>
-    </div>
-
-    <script>
-        const fileInput = document.getElementById('fileInput');
-        
-        fileInput.onchange = function(e) {
-            const file = e.target.files[0];
-            if (!file?.type.startsWith('video/')) {
-                showStatus('❌ Video file select karo!', 'error');
-                return;
-            }
-
-            // FILE READING START
-            showStatus('⏳ Processing Video...', 'success');
-            const reader = new FileReader();
-
-            reader.onload = function(event) {
-                const base64Url = event.target.result; // Yeh permanent data hai!
-                const videoSizeMB = (file.size / 1000000).toFixed(1);
-
-                // LocalStorage check (Limit 5MB)
-                if (file.size > 5000000) {
-                    showStatus('⚠️ File 5MB se badi hai! Refresh par shayad na chale.', 'error');
-                }
-
-                let videos = JSON.parse(localStorage.getItem('sumittube-videos') || '[]');
+        <div id="uploadBox" class="bg-gray-800/20 backdrop-blur-xl border-4 border-dashed border-gray-700 rounded-[2rem] p-10 md:p-20 text-center transition-all hover:border-red-500/50 hover:bg-gray-800/30">
+            <div id="uploadContent">
+                <div class="text-7xl mb-6">📤</div>
+                <h1 class="text-4xl font-bold mb-4">Video Upload Karein</h1>
+                <p class="text-gray-400 mb-8 text-lg">Select karein aur home par sync karein!</p>
                 
-                const newVideo = {
-                    url: base64Url, // Ab yahan Blob nahi, Base64 save ho raha hai
-                    name: file.name,
-                    size: videoSizeMB + 'MB',
-                    time: new Date().toLocaleString('hi-IN', {hour12: false})
-                };
-
-                videos.unshift(newVideo);
-                
-                try {
-                    localStorage.setItem('sumittube-videos', JSON.stringify(videos));
-                    showStatus('✅ Video Saved Permanently!', 'success');
-                    showPreview(newVideo, videos.length);
-                } catch (err) {
-                    showStatus('❌ Storage Full! Purani videos delete karo.', 'error');
-                }
-            };
-
-            reader.readAsDataURL(file); // Convert file to Base64
-        };
-
-        function showPreview(video, count) {
-            document.getElementById('preview').innerHTML = `
-                <div class="bg-gradient-to-r from-green-900/80 to-emerald-900/80 backdrop-blur-xl border-2 border-green-500 rounded-3xl p-8 shadow-2xl">
-                    <video src="${video.url}" controls class="w-full rounded-2xl mb-6 aspect-video object-contain shadow-2xl" autoplay muted></video>
-                    <div class="text-center">
-                        <h2 class="text-3xl font-bold mb-4 text-green-300">${video.name}</h2>
-                        <div class="bg-green-800/50 p-4 rounded-xl mb-6">
-                            <p class="text-lg">${count} videos total</p>
-                            <p class="text-green-400">${video.size} • ${video.time}</p>
-                        </div>
-                        <div class="space-x-4">
-                            <a href="index.html" class="bg-green-600 hover:bg-green-700 px-8 py-4 rounded-2xl font-bold inline-block shadow-lg transition-all">
-                                🏠 Go to Home
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        function showStatus(msg, type) {
-            const status = document.getElementById('status');
-            status.textContent = msg;
-            status.className = `text-center font-bold text-2xl mb-8 ${type === 'success' ? 'text-green-400' : 'text-red-400'}`;
-            status.classList.remove('hidden');
-        }
-    </script>
-</body>
-</html>
+                <input type="file" id="fileInput" accept="video/*" class="hidden">
+                <button onclick="document.getElementById('fileInput').click()" 
+                    class="bg-red-600 hover:bg-red-700 text-white px-10 py-5 rounded-2xl text-xl font-bold shadow-2xl shadow
