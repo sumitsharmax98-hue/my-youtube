@@ -1,34 +1,36 @@
 <!DOCTYPE html>
-<html>
+<html lang="hi">
 <head>
-    <title>SumitTube</title>
+    <title>SumitTube - Home</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-black text-white min-h-screen">
-    <nav class="p-6 bg-gray-900 sticky top-0 z-50">
+    <nav class="p-6 bg-gray-900 sticky top-0 z-50 shadow-2xl">
         <div class="max-w-6xl mx-auto flex justify-between items-center">
             <h1 class="text-3xl font-bold bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">📱 SumitTube</h1>
-            <a href="upload.html" class="bg-red-600 px-8 py-3 rounded-full hover:bg-red-700 font-bold transition-all shadow-lg shadow-red-900/20">➕ Upload</a>
+            <a href="upload.html" class="bg-red-600 px-8 py-3 rounded-full hover:bg-red-700 font-bold transition-all shadow-lg shadow-red-900/20 active:scale-95">➕ Upload</a>
         </div>
     </nav>
 
     <div class="max-w-6xl mx-auto p-8">
-        <div class="flex justify-between items-center mb-8">
-            <h2 class="text-3xl font-bold">📺 My Videos</h2>
-            <button onclick="loadVideos()" class="bg-blue-600 px-6 py-2 rounded-full hover:bg-blue-700 transition-colors">🔄 Refresh</button>
+        <div class="flex justify-between items-center mb-10">
+            <h2 class="text-3xl font-bold text-gray-100">📺 My Videos</h2>
+            <button onclick="loadVideos()" class="bg-blue-600 px-6 py-2 rounded-full hover:bg-blue-700 transition-colors flex items-center gap-2 font-semibold">🔄 Refresh</button>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="videoGrid">
             </div>
 
-        <div id="noVideos" class="text-center py-20 text-gray-500 hidden">
-            <div class="text-6xl mb-4">🎥</div>
-            <h3 class="text-2xl mb-2 font-semibold text-white">No videos yet</h3>
-            <a href="upload.html" class="bg-red-600 px-8 py-3 rounded-full font-bold inline-block mt-4">Upload First Video</a>
+        <div id="noVideos" class="text-center py-24 text-gray-500 hidden">
+            <div class="text-8xl mb-6">🎥</div>
+            <h3 class="text-2xl mb-4 font-semibold text-white">Koi video nahi mili!</h3>
+            <p class="mb-8 text-gray-400">Pehli video upload karke shuruwat karein.</p>
+            <a href="upload.html" class="bg-red-600 px-10 py-4 rounded-full font-bold text-white shadow-xl hover:bg-red-700 transition-all inline-block">Upload Video</a>
         </div>
     </div>
 
     <script>
+        // Videos load karne ka function
         function loadVideos() {
             const videos = JSON.parse(localStorage.getItem('sumittube-videos') || '[]');
             const grid = document.getElementById('videoGrid');
@@ -45,59 +47,5 @@
             
             videos.forEach((video, index) => {
                 grid.innerHTML += `
-                    <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-red-500/50 transition-all group relative cursor-pointer" onclick="playVideo('${video.url}')">
-                        <button onclick="deleteVideo(event, ${index})" class="absolute top-3 right-3 bg-red-600 hover:bg-red-700 text-white w-8 h-8 rounded-full z-20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-xl">
-                            ✕
-                        </button>
-
-                        <div class="relative aspect-video bg-black overflow-hidden">
-                            <video src="${video.url}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" preload="metadata"></video>
-                            <div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40">
-                                <div class="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center pl-1">
-                                    <span class="text-white text-xl">▶</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="p-5">
-                            <h3 class="font-bold text-lg text-white truncate">${video.name}</h3>
-                            <div class="flex items-center justify-between mt-3 text-xs text-gray-400">
-                                <span>${video.size}</span>
-                                <span>${video.time}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function deleteVideo(event, index) {
-            event.stopPropagation();
-            if(confirm("Dhyan se! Kya aap ye video delete karna chahte hain?")) {
-                let videos = JSON.parse(localStorage.getItem('sumittube-videos') || '[]');
-                videos.splice(index, 1);
-                localStorage.setItem('sumittube-videos', JSON.stringify(videos));
-                loadVideos();
-            }
-        }
-
-        function playVideo(url) {
-            const modal = document.createElement('div');
-            modal.id = 'videoModal';
-            modal.className = "fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm";
-            modal.innerHTML = `
-                <div class="relative w-full max-w-4xl">
-                    <video src="${url}" controls class="w-full rounded-2xl shadow-2xl" autoplay></video>
-                    <button onclick="document.getElementById('videoModal').remove()" 
-                        class="absolute -top-12 right-0 bg-red-600 text-white w-10 h-10 rounded-full font-bold text-xl hover:bg-red-700 flex items-center justify-center">
-                        ×
-                    </button>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }
-
-        window.onload = loadVideos;
-    </script>
-</body>
-</html>
+                    <div class="bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden hover:border-red-500/50 transition-all group relative cursor-pointer shadow-lg" onclick="playVideo('${video.url}')">
+                        <button onclick="deleteVideo(event, ${index})" class="absolute top-4 right-4 bg-red-6
