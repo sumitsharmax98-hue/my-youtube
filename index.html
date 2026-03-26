@@ -18,8 +18,7 @@
             <button onclick="loadVideos()" class="bg-blue-600 px-6 py-2 rounded-full hover:bg-blue-700 transition-colors flex items-center gap-2 font-semibold">🔄 Refresh View</button>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="videoGrid">
-            </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="videoGrid"></div>
 
         <div id="noVideos" class="text-center py-20 text-gray-500 hidden">
             <div class="text-6xl mb-4">🎥</div>
@@ -31,57 +30,98 @@
     <script>
         const GITHUB_USERNAME = "sumitsharmax98-hue"; 
         const REPO_NAME = "my-youtube";
-        
-        // 🔥 MAGIC: GitHub API use kar rahe hain taaki Fast Update ho
+        const TOKEN = "PASTE_YOUR_TOKEN_HERE"; // 🔴 अपना token डाल
+
         const API_URL = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/data.json`;
 
         async function loadVideos() {
             const grid = document.getElementById('videoGrid');
             const noVideos = document.getElementById('noVideos');
-            grid.innerHTML = '<p class="text-center col-span-full animate-pulse">Checking for new videos...</p>';
-            
-            try {
-                // T=Date.now() lagane se browser cache bypass ho jata hai
-                const response = await fetch(`${API_URL}?t=${Date.now()}`);
-                
-                if (!response.ok) throw new Error("File not found");
 
+            grid.innerHTML = '<p class="text-center col-span-full animate-pulse">Loading...</p>';
+
+            try {
+                const response = await fetch(`${API_URL}?t=${Date.now()}`);
                 const fileData = await response.json();
-                // GitHub content Base64 mein hota hai, use decode karna padta hai
+
                 const content = JSON.parse(decodeURIComponent(escape(atob(fileData.content))));
                 const videos = content.videos || [];
 
                 grid.innerHTML = '';
-                
+
                 if (videos.length === 0) {
                     noVideos.classList.remove('hidden');
                 } else {
                     noVideos.classList.add('hidden');
-                    videos.forEach(video => {
+
+                    videos.forEach((video, index) => {
                         const card = `
                             <div class="bg-gray-900 rounded-2xl overflow-hidden border border-gray-800 hover:border-red-500 transition-all group">
                                 <video class="w-full aspect-video object-cover" controls>
                                     <source src="${video.url}" type="video/mp4">
                                 </video>
+
                                 <div class="p-4">
                                     <h3 class="font-bold text-lg truncate mb-1">${video.name}</h3>
-                                    <div class="flex justify-between text-xs text-gray-400">
+
+                                    <div class="flex justify-between text-xs text-gray-400 mb-3">
                                         <span>${video.size}</span>
                                         <span>${video.time}</span>
                                     </div>
+
+                                    <!-- 🔥 DELETE BUTTON -->
+                                    <button onclick="deleteVideo(${index})"
+                                        class="w-full bg-red-600 hover:bg-red-700 py-2 rounded-lg font-semibold transition">
+                                        🗑 Delete
+                                    </button>
                                 </div>
                             </div>
                         `;
                         grid.innerHTML += card;
                     });
                 }
+
+                // store sha globally
+                window.fileSha = fileData.sha;
+
             } catch (err) {
                 console.error(err);
-                grid.innerHTML = `<p class="text-center col-span-full text-red-400">Error loading videos. Please check if data.json exists.</p>`;
+                grid.innerHTML = `<p class="text-center col-span-full text-red-400">Error loading videos</p>`;
             }
         }
 
-        // Page load hote hi videos dikhao
+        async function deleteVideo(index) {
+            if (!confirm("Delete this video?")) return;
+
+            try {
+                const response = await fetch(API_URL);
+                const fileData = await response.json();
+
+                const content = JSON.parse(decodeURIComponent(escape(atob(fileData.content))));
+                content.videos.splice(index, 1);
+
+                await fetch(API_URL, {
+                    method: "PUT",
+                    headers: {
+                        "Authorization": "token " + TOKEN,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        message: "Delete video",
+                        content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
+                        sha: fileData.sha
+                    })
+                });
+
+                alert("Video Deleted ✅");
+                loadVideos();
+
+            } catch (err) {
+                console.error(err);
+                alert("Delete failed ❌");
+            }
+        }
+
         loadVideos();
     </script>
 </body>
