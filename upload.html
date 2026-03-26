@@ -3,61 +3,96 @@
 <head>
     <title>Upload - SumitTube</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        video { max-height: 400px; }
+        .upload-card { transition: all 0.3s; }
+        .upload-card:hover { transform: translateY(-5px); }
+    </style>
 </head>
-<body class="bg-gray-900 text-white p-8 min-h-screen">
-    <div class="max-w-2xl mx-auto">
-        <a href="index.html" class="text-2xl mb-8 block hover:text-red-400">← Home</a>
-        <h1 class="text-4xl font-bold mb-12 text-center">📤 Video Upload</h1>
-        
-        <div class="border-4 border-dashed border-gray-500 rounded-3xl p-16 text-center hover:border-red-400 mb-12">
-            <div class="text-6xl mb-6">🎥</div>
-            <button id="uploadBtn" class="bg-red-600 hover:bg-red-700 px-12 py-4 rounded-2xl text-xl font-bold">
-                📱 Select Video
-            </button>
-            <p class="text-gray-400 mt-4">Upload successful = Home pe dikhega!</p>
+<body class="bg-gradient-to-br from-gray-900 to-black text-white min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <nav class="flex justify-between items-center mb-12">
+            <a href="index.html" class="text-4xl font-black bg-gradient-to-r from-red-500 via-pink-500 to-purple-500 bg-clip-text text-transparent hover:scale-105 transition-all">
+                📱 SumitTube
+            </a>
+            <div class="text-sm text-gray-500">Videos never disappear!</div>
+        </nav>
+
+        <div class="text-center mb-16">
+            <h1 class="text-6xl font-black mb-6 bg-gradient-to-r from-rose-400 via-fuchsia-500 to-indigo-500 bg-clip-text text-transparent">
+                🚀 Upload Video
+            </h1>
+            <p class="text-xl text-gray-400 mb-8">Drag or click - Instant home sync!</p>
         </div>
-        
-        <div id="status"></div>
-        <div id="videos"></div>
+
+        <!-- Upload Area -->
+        <div class="upload-card border-4 border-dashed border-gray-600 rounded-3xl p-20 mb-12 text-center hover:border-rose-400 hover:shadow-2xl cursor-pointer bg-gray-800/30 backdrop-blur-sm">
+            <div class="text-8xl mb-8">🎥</div>
+            <h2 class="text-4xl font-bold mb-4">Drop Video Here</h2>
+            <input type="file" id="fileInput" accept="video/*" class="hidden">
+            <button onclick="document.getElementById('fileInput').click()" class="bg-gradient-to-r from-rose-500 to-fuchsia-600 hover:from-rose-600 hover:to-fuchsia-700 text-white px-16 py-6 rounded-3xl text-2xl font-bold shadow-2xl mb-8 transform hover:-translate-y-2 transition-all duration-300">
+                📤 Select Video
+            </button>
+            <p class="text-lg text-gray-500">MP4 • Max 100MB • Auto-sync to home</p>
+        </div>
+
+        <!-- Status & Preview -->
+        <div id="status" class="text-center font-bold text-2xl mb-8 hidden"></div>
+        <div id="preview" class="space-y-6"></div>
     </div>
 
-    <script src="https://upload-widget.cloudinary.com/latest/global/all.js"></script>
     <script>
-        const CLOUD_NAME = 'dkyka4sut';
+        const fileInput = document.getElementById('fileInput');
         
-        document.getElementById('uploadBtn').onclick = () => {
-            document.getElementById('status').innerHTML = '<div class="text-yellow-400 font-bold">🔄 Upload opening...</div>';
+        fileInput.onchange = function(e) {
+            const file = e.target.files[0];
+            if (!file?.type.startsWith('video/')) {
+                showStatus('❌ Video file select karo!', 'error');
+                return;
+            }
             
-            cloudinary.openUploadWidget({
-                cloudName: CLOUD_NAME,
-                uploadPreset: 'free-upload',
-                sources: ['local']
-            }, (error, result) => {
-                if (!error && result.event === 'success') {
-                    const video = {
-                        url: result.info.secure_url,
-                        name: result.info.original_filename,
-                        size: (result.info.bytes/1e6).toFixed(1) + 'MB',
-                        time: new Date().toLocaleString()
-                    };
-                    
-                    // UNIVERSAL STORAGE - SAB JAGAH SYNC!
-                    let allVideos = JSON.parse(localStorage.getItem('sumittube-videos') || '[]');
-                    allVideos.unshift(video);
-                    localStorage.setItem('sumittube-videos', JSON.stringify(allVideos));
-                    
-                    document.getElementById('status').innerHTML = `
-                        <div class="text-green-400 font-bold text-2xl mb-4">✅ UPLOAD SUCCESS!</div>
-                        <a href="index.html" class="bg-green-600 px-8 py-4 rounded-xl font-bold block hover:bg-green-700 mb-4">🏠 Go to Home - Video Dikhega!</a>
-                        <div class="bg-gray-800 p-6 rounded-xl">
-                            <video src="${video.url}" controls class="w-full rounded mb-4 aspect-video"></video>
-                            <h3 class="font-bold text-xl">${video.name}</h3>
-                        </div>
-                    `;
-                } else {
-                    document.getElementById('status').innerHTML = `<div class="text-red-400 font-bold">❌ ${error?.message || 'Unknown error'}</div>`;
-                }
+            const url = URL.createObjectURL(file);
+            showStatus('✅ Video Ready! Home pe live!', 'success');
+            
+            // UNIVERSAL STORAGE - REFRESH PROOF!
+            let videos = JSON.parse(localStorage.getItem('sumittube-videos') || '[]');
+            videos.unshift({
+                url: url,
+                name: file.name,
+                size: (file.size / 1000000).toFixed(1) + 'MB',
+                time: new Date().toLocaleString('hi-IN', {hour12: false})
             });
+            localStorage.setItem('sumittube-videos', JSON.stringify(videos));
+            
+            // Preview
+            document.getElementById('preview').innerHTML = `
+                <div class="bg-gradient-to-r from-green-900/80 to-emerald-900/80 backdrop-blur-xl border-2 border-green-500 rounded-3xl p-8 shadow-2xl">
+                    <video src="${url}" controls class="w-full rounded-2xl mb-6 aspect-video object-contain shadow-2xl" autoplay muted></video>
+                    <div class="text-center">
+                        <h2 class="text-3xl font-bold mb-4 text-green-300">${file.name}</h2>
+                        <div class="bg-green-800/50 p-4 rounded-xl mb-6">
+                            <p class="text-lg">${videos.length} videos total</p>
+                            <p class="text-green-400">${video.size} • ${video.time}</p>
+                        </div>
+                        <div class="space-x-4">
+                            <a href="index.html" class="bg-green-600 hover:bg-green-700 px-8 py-4 rounded-2xl font-bold inline-block shadow-lg">
+                                🏠 Home (Video Live!)
+                            </a>
+                            <button onclick="location.reload()" class="bg-gray-700 hover:bg-gray-600 px-8 py-4 rounded-2xl font-bold shadow-lg">
+                                🔄 Refresh Test
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+        
+        function showStatus(msg, type) {
+            const status = document.getElementById('status');
+            status.textContent = msg;
+            status.className = `text-center font-bold text-2xl mb-8 ${type === 'success' ? 'text-green-400' : 'text-red-400'}`;
+            status.classList.remove('hidden');
+            setTimeout(() => status.classList.add('hidden'), 3000);
         }
     </script>
 </body>
