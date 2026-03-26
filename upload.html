@@ -42,9 +42,9 @@
     </div>
 
     <script>
-        // Cloudinary Details
+        // ✅ APKI UPDATED DETAILS
         const CLOUD_NAME = "dkyka4sut"; 
-        const UPLOAD_PRESET = "f1301a4e-d3da-4e5e-8c72-829a919cbe82"; 
+        const UPLOAD_PRESET = "free-upload"; 
 
         const fileInput = document.getElementById('fileInput');
         const uploadContent = document.getElementById('uploadContent');
@@ -63,6 +63,7 @@
             formData.append('upload_preset', UPLOAD_PRESET);
 
             try {
+                // Cloudinary API Call
                 const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`, {
                     method: 'POST',
                     body: formData
@@ -85,11 +86,11 @@
                         <h2 class="text-3xl font-bold text-green-500">Success!</h2>
                     `;
                     
-                    // Redirect to Home
                     setTimeout(() => {
                         window.location.href = 'index.html';
                     }, 1500);
                 } else {
+                    // Yahan error dikhega agar preset galat hua toh
                     alert("Error: " + (data.error ? data.error.message : "Upload failed"));
                     location.reload();
                 }
