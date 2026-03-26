@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SumitTube</title>
+    <title>SumitTube - Global</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-black text-white min-h-screen">
@@ -14,11 +14,10 @@
 
     <div class="max-w-6xl mx-auto p-8">
         <div class="flex justify-between items-center mb-8">
-            <h2 class="text-3xl font-bold">📺 My Videos</h2>
+            <h2 class="text-3xl font-bold">📺 All Videos</h2>
             <button onclick="loadVideos()" class="bg-blue-600 px-6 py-2 rounded-full hover:bg-blue-700 transition-colors flex items-center gap-2 font-semibold">🔄 Refresh View</button>
         </div>
         
-        <div id="debug" class="bg-gray-800 p-4 rounded mb-6 hidden"></div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="videoGrid">
             </div>
 
@@ -30,93 +29,37 @@
     </div>
 
     <script>
-        function loadVideos() {
-            const videos = JSON.parse(localStorage.getItem('sumittube-videos') || '[]');
+        // 1. APNI DETAILS YAHAN CHECK KAREIN
+        const GITHUB_USERNAME = "sumitsharmax98-hue"; 
+        const REPO_NAME = "my-youtube";
+        const JSON_URL = `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/main/data.json`;
+
+        async function loadVideos() {
             const grid = document.getElementById('videoGrid');
             const noVideos = document.getElementById('noVideos');
+            grid.innerHTML = '<p class="text-center col-span-full">Loading videos from cloud...</p>';
             
+            let allVideos = [];
+
+            try {
+                // STEP A: GitHub JSON se data lao (Sabke liye)
+                const response = await fetch(JSON_URL);
+                if (response.ok) {
+                    const data = await response.json();
+                    allVideos = data.videos || [];
+                    console.log("GitHub videos loaded:", allVideos.length);
+                }
+            } catch (err) {
+                console.log("GitHub data not found or error:", err);
+            }
+
+            // STEP B: LocalStorage se data lao (Sirf aapke liye)
+            const localVideos = JSON.parse(localStorage.getItem('sumittube-videos') || '[]');
+            
+            // Dono ko merge karo (Nayi videos upar)
+            const combinedVideos = [...localVideos, ...allVideos];
+
             grid.innerHTML = '';
             
-            if (videos.length === 0) {
-                noVideos.classList.remove('hidden');
-                return;
-            }
-            
-            noVideos.classList.add('hidden');
-            
-            videos.forEach((video, index) => {
-                grid.innerHTML += `
-                    <div class="bg-gray-800 rounded-xl p-6 hover:bg-gray-700 cursor-pointer group relative" onclick="playVideo('${video.url}')">
-                        <button onclick="deleteVideo(event, ${index})" 
-                            style="position:absolute; top:-15px; right:-15px; background:#dc2626; color:white; border:none; width:45px; height:45px; border-radius:50%; font-size:24px; font-weight:bold; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3); z-index:20; opacity:0;" 
-                            class="group-hover:opacity-100 transition-opacity">
-                            ✕
-                        </button>
-                        
-                        <video src="${video.url}" class="w-full rounded-lg mb-4 aspect-video object-cover group-hover:scale-105 transition-transform" muted preload="metadata"></video>
-                        <h3 class="font-bold text-xl mb-2 truncate">${video.name}</h3>
-                        <p class="text-gray-400 text-sm">${video.size} • ${video.time}</p>
-                    </div>
-                `;
-            });
-        }
-
-        function deleteVideo(event, index) {
-            event.stopPropagation();
-            if(confirm("Dhyan se! Kya aap ye video delete karna chahte hain?")) {
-                let videos = JSON.parse(localStorage.getItem('sumittube-videos') || '[]');
-                videos.splice(index, 1);
-                localStorage.setItem('sumittube-videos', JSON.stringify(videos));
-                loadVideos();
-            }
-        }
-
-        function playVideo(url) {
-            if(!url || url === 'undefined') {
-                alert("Video file error!");
-                return;
-            }
-
-            const modal = document.createElement('div');
-            modal.id = 'videoModal';
-            modal.className = "fixed inset-0 bg-black/95 z-[9999] flex flex-col items-center justify-center p-4 backdrop-blur-sm";
-            
-            modal.innerHTML = `
-                <div class="relative w-full max-w-4xl flex flex-col items-center">
-                    <button onclick="closeModal()" 
-                        class="absolute -top-16 right-0 bg-red-600 text-white px-8 py-2 rounded-full font-black text-lg hover:bg-red-700 shadow-2xl border-2 border-white/10 active:scale-95 transition-all z-[10001]">
-                        ✕ CLOSE PLAYER
-                    </button>
-                    
-                    <video id="mainPlayer" src="${url}" controls playsinline autoplay 
-                        class="w-full rounded-2xl shadow-[0_0_60px_rgba(220,38,38,0.2)] border border-white/5 bg-black">
-                    </video>
-                    
-                    <p class="mt-6 text-gray-500 text-xs font-bold uppercase tracking-wider">SumitTube Player</p>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            
-            // Handle Mobile Back Button
-            window.addEventListener('popstate', closeModal);
-            history.pushState({modal: true}, "");
-        }
-
-        function closeModal() {
-            const modal = document.getElementById('videoModal');
-            if(modal) {
-                const video = modal.querySelector('video');
-                video.pause();
-                video.src = ""; // Memory clear 
-                modal.remove();
-                if(history.state && history.state.modal) {
-                    history.back();
-                }
-            }
-        }
-
-        // Page start par load karo
-        window.onload = loadVideos;
-    </script>
-</body>
-</html>
+            if (combinedVideos.length === 0) {
+                noVideos.classList.remove
