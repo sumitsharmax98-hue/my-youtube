@@ -1,36 +1,35 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html>
 <head>
-    <title>SumitTube - Home</title>
+    <title>SumitTube</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-black text-white min-h-screen">
-    <nav class="p-6 bg-gray-900 sticky top-0 z-50 shadow-2xl">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
+    <nav class="p-6 bg-gray-900 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto flex justify-between">
             <h1 class="text-3xl font-bold bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">📱 SumitTube</h1>
             <a href="upload.html" class="bg-red-600 px-8 py-3 rounded-full hover:bg-red-700 font-bold transition-all shadow-lg shadow-red-900/20 active:scale-95">➕ Upload</a>
         </div>
     </nav>
 
     <div class="max-w-6xl mx-auto p-8">
-        <div class="flex justify-between items-center mb-10">
-            <h2 class="text-3xl font-bold text-gray-100">📺 My Videos</h2>
-            <button onclick="loadVideos()" class="bg-blue-600 px-6 py-2 rounded-full hover:bg-blue-700 transition-colors flex items-center gap-2 font-semibold">🔄 Refresh</button>
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-3xl font-bold">📺 My Videos</h2>
+            <button onclick="loadVideos()" class="bg-blue-600 px-6 py-2 rounded-full hover:bg-blue-700 transition-colors flex items-center gap-2 font-semibold">🔄 Refresh View</button>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="videoGrid">
+        <div id="debug" class="bg-gray-800 p-4 rounded mb-6 hidden"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="videoGrid">
             </div>
 
-        <div id="noVideos" class="text-center py-24 text-gray-500 hidden">
-            <div class="text-8xl mb-6">🎥</div>
-            <h3 class="text-2xl mb-4 font-semibold text-white">Koi video nahi mili!</h3>
-            <p class="mb-8 text-gray-400">Pehli video upload karke shuruwat karein.</p>
-            <a href="upload.html" class="bg-red-600 px-10 py-4 rounded-full font-bold text-white shadow-xl hover:bg-red-700 transition-all inline-block">Upload Video</a>
+        <div id="noVideos" class="text-center py-20 text-gray-500 hidden">
+            <div class="text-6xl mb-4">🎥</div>
+            <h3 class="text-2xl mb-2 font-semibold text-white">No videos yet</h3>
+            <a href="upload.html" class="bg-red-600 px-8 py-3 rounded-full font-bold inline-block mt-4">Upload First Video</a>
         </div>
     </div>
 
     <script>
-        // Videos load karne ka function
         function loadVideos() {
             const videos = JSON.parse(localStorage.getItem('sumittube-videos') || '[]');
             const grid = document.getElementById('videoGrid');
@@ -47,5 +46,77 @@
             
             videos.forEach((video, index) => {
                 grid.innerHTML += `
-                    <div class="bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden hover:border-red-500/50 transition-all group relative cursor-pointer shadow-lg" onclick="playVideo('${video.url}')">
-                        <button onclick="deleteVideo(event, ${index})" class="absolute top-4 right-4 bg-red-6
+                    <div class="bg-gray-800 rounded-xl p-6 hover:bg-gray-700 cursor-pointer group relative" onclick="playVideo('${video.url}')">
+                        <button onclick="deleteVideo(event, ${index})" 
+                            style="position:absolute; top:-15px; right:-15px; background:#dc2626; color:white; border:none; width:45px; height:45px; border-radius:50%; font-size:24px; font-weight:bold; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.3); z-index:20; opacity:0;" 
+                            class="group-hover:opacity-100 transition-opacity">
+                            ✕
+                        </button>
+                        
+                        <video src="${video.url}" class="w-full rounded-lg mb-4 aspect-video object-cover group-hover:scale-105 transition-transform" muted preload="metadata"></video>
+                        <h3 class="font-bold text-xl mb-2 truncate">${video.name}</h3>
+                        <p class="text-gray-400 text-sm">${video.size} • ${video.time}</p>
+                    </div>
+                `;
+            });
+        }
+
+        function deleteVideo(event, index) {
+            event.stopPropagation();
+            if(confirm("Dhyan se! Kya aap ye video delete karna chahte hain?")) {
+                let videos = JSON.parse(localStorage.getItem('sumittube-videos') || '[]');
+                videos.splice(index, 1);
+                localStorage.setItem('sumittube-videos', JSON.stringify(videos));
+                loadVideos();
+            }
+        }
+
+        function playVideo(url) {
+            if(!url || url === 'undefined') {
+                alert("Video file error!");
+                return;
+            }
+
+            const modal = document.createElement('div');
+            modal.id = 'videoModal';
+            modal.className = "fixed inset-0 bg-black/95 z-[9999] flex flex-col items-center justify-center p-4 backdrop-blur-sm";
+            
+            modal.innerHTML = `
+                <div class="relative w-full max-w-4xl flex flex-col items-center">
+                    <button onclick="closeModal()" 
+                        class="absolute -top-16 right-0 bg-red-600 text-white px-8 py-2 rounded-full font-black text-lg hover:bg-red-700 shadow-2xl border-2 border-white/10 active:scale-95 transition-all z-[10001]">
+                        ✕ CLOSE PLAYER
+                    </button>
+                    
+                    <video id="mainPlayer" src="${url}" controls playsinline autoplay 
+                        class="w-full rounded-2xl shadow-[0_0_60px_rgba(220,38,38,0.2)] border border-white/5 bg-black">
+                    </video>
+                    
+                    <p class="mt-6 text-gray-500 text-xs font-bold uppercase tracking-wider">SumitTube Player</p>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Handle Mobile Back Button
+            window.addEventListener('popstate', closeModal);
+            history.pushState({modal: true}, "");
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('videoModal');
+            if(modal) {
+                const video = modal.querySelector('video');
+                video.pause();
+                video.src = ""; // Memory clear 
+                modal.remove();
+                if(history.state && history.state.modal) {
+                    history.back();
+                }
+            }
+        }
+
+        // Page start par load karo
+        window.onload = loadVideos;
+    </script>
+</body>
+</html>
